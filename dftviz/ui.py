@@ -42,10 +42,11 @@ class UIController:
 
     # ---- Internal helpers ----
     def _build_figure(self):
-        self.fig, self.ax = plt.subplots(nrows=1, ncols=4, figsize=self.figsize)
+        self.fig, self.ax = plt.subplots(
+            nrows=1, ncols=4, figsize=self.figsize, constrained_layout=True
+        )
         self.ax[0].imshow(self.image_data, cmap="gray", vmin=0, vmax=255)
         self.ax[0].set_title("Original")
-        plt.subplots_adjust(left=0.05, right=0.98, bottom=0.10, top=0.85, wspace=0.30)
         if hasattr(self.fig.canvas, "manager") and hasattr(self.fig.canvas.manager, "set_window_title"):
             self.fig.canvas.manager.set_window_title(self.window_title)
 
@@ -59,8 +60,7 @@ class UIController:
 
     def _set_titles(self):
         self.fig.suptitle(
-            f"Autoplay: {self.animator.steps_per_tick} comps/tick • {self.animator.tick_interval_ms}ms",
-            y=0.90,
+            f"Autoplay: {self.animator.steps_per_tick} comps/tick • {self.animator.tick_interval_ms}ms"
         )
 
     def _schedule_burst(self, total_steps: int):

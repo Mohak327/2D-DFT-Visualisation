@@ -57,8 +57,8 @@ class Animator:
         self.normalized_fft_image = np.fft.fftshift(self.normalized_fft_image)
         self.visited_fft_image = COLORMAP(self.normalized_fft_image)[:, :, :3]
 
-        self.fft_ax.set_title("FFT")
-        self.fft_imshow = fft_ax.imshow(self.image)
+        self.fft_ax.set_title("FFT", pad=8)
+        self.fft_imshow = self.fft_ax.imshow(self.image)
 
         middle_pos = (self.size // 2, self.size // 2)
         self.highlight_circle = plt.Circle(
@@ -123,7 +123,7 @@ class Animator:
         self.layer_imshow.set_data(sinusoid)
         self.layer_imshow.set_clim(vmin=vmin, vmax=vmax)
         self.image_imshow.set_data(self.image)
-        self.layer_ax.set_title(f"Sinusoid freq x={x} y={y}")
+        self.layer_ax.set_title(f"Sinusoid freq x={x} y={y}", pad=8)
         self.mark_fft_pixel_as_visited(x, y)
         self.mark_fft_pixel_as_visited(-x, y)
         self.fft_imshow.set_data(self.visited_fft_image)
@@ -150,5 +150,7 @@ class Animator:
         self.layer_imshow.set_data(last_layer)
         self.layer_imshow.set_clim(vmin=vmin, vmax=vmax)
         self.image_imshow.set_data(self.image)
-        self.layer_ax.set_title(f"Sinusoid freq x={last_x} y={last_y}" if n > 0 else "Sinusoid")
+        self.layer_ax.set_title(
+            f"Sinusoid freq x={last_x} y={last_y}" if n > 0 else "Sinusoid", pad=8
+        )
         self.fft_imshow.set_data(self.visited_fft_image)

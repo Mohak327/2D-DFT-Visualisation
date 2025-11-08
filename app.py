@@ -4,7 +4,7 @@ from PIL import Image
 import numpy as np
 from dftviz.ui import UIController
 
-DEFAULT_IMAGE = Path("input/test_img.jpg")
+DEFAULT_IMAGE = Path("input/test_img_2.jpg")
 DEFAULT_SIZE = 256
 
 

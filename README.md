@@ -1,11 +1,14 @@
 # 2D FFT / Manual Reconstruction Visualisation
 
+![alt text](image-1.png)
+
 Interactive visualisation of reconstructing a 2D image from its frequency components. The project computes a forward 2D FFT (`numpy.fft.fft2`) of a grayscale image, then manually (term-by-term) synthesises the spatial domain image by summing real parts of complex sinusoids. A Matplotlib UI animates this progressive reconstruction, showing:
 
 1. Original image
 2. Current sinusoid (layer) being added
 3. FFT magnitude map with visited frequencies highlighted
 4. Reconstructed image so far
+![alt text](image.png)
 
 ## Why
 Typical demonstrations jump straight from FFT coefficients to `ifft2`. This project instead exposes the contribution of each frequency component, helping build intuition for how low and high frequencies sum to form structure and fine detail.
@@ -72,4 +75,3 @@ Potential enhancements:
 - Brightness scaling introduces per-step min/max computation but remains minor relative to sinusoid generation.
 
 ---
-Feel free to open issues or extend the controller for more interactive features.
