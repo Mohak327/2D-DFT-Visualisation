@@ -1,88 +1,88 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
 from .animator import Animator
 
+class UIController:
+    def __init__(
+        self,
+        image_data: np.ndarray,
+        image_fft: np.ndarray,
+        *,
+        figsize=(14, 3.5),
+        autoplay: bool = True,
+        window_title: str | None = None,
+    ):
+        self.image_data = image_data
+        self.image_fft = image_fft
+        self.figsize = figsize
+        self.autoplay = autoplay
+        self.window_title = window_title or "2D FFT Visualisation"
 
-def start_with_slider(image_data: np.ndarray, image_fft: np.ndarray, window_title: str = "2D FFT Visualisation"):
-    """Start the UI where a slider controls the number of components used in reconstruction."""
-    fig, ax = plt.subplots(nrows=2, ncols=2)
+        # Runtime state
+        self.fig = None
+        self.ax = None
+        self.animator: Animator | None = None
+        self._current_step = 0
+        self._burst_end = 0
+        self._timer = None
+        self._bursting = False
 
-    ax[0, 0].imshow(image_data, cmap="gray", vmin=0, vmax=255)
-    ax[0, 0].set_title("Original Image")
+    def initialize(self):
+        """Entry point to build UI and begin autoplay (if enabled)."""
+        self._build_figure()
+        self._init_animator()
+        self._set_titles()
+        if self.autoplay:
+            self.run_to_completion()
+        plt.show()
 
-    animator = Animator(
-        image_ax=ax[1, 0],
-        layer_ax=ax[1, 1],
-        fft_ax=ax[0, 1],
-        fft=image_fft,
-    )
+    def run_to_completion(self):
+        """Schedule a single smooth burst to process all remaining components."""
+        self._schedule_burst(len(self.animator.frequencies_to_draw))
 
-    fig.suptitle("Use the slider to control reconstruction progress", y=0.95)
-    if hasattr(fig.canvas, "manager") and hasattr(fig.canvas.manager, "set_window_title"):
-        fig.canvas.manager.set_window_title(window_title)
+    # ---- Internal helpers ----
+    def _build_figure(self):
+        self.fig, self.ax = plt.subplots(nrows=1, ncols=4, figsize=self.figsize)
+        self.ax[0].imshow(self.image_data, cmap="gray", vmin=0, vmax=255)
+        self.ax[0].set_title("Original")
+        plt.subplots_adjust(left=0.05, right=0.98, bottom=0.10, top=0.85, wspace=0.30)
+        if hasattr(self.fig.canvas, "manager") and hasattr(self.fig.canvas.manager, "set_window_title"):
+            self.fig.canvas.manager.set_window_title(self.window_title)
 
-    # Add spacing between subplots and keep room for the slider
-    plt.subplots_adjust(left=0.08, right=0.98, bottom=0.18, top=0.88, wspace=0.35, hspace=0.40)
-    slider_ax = fig.add_axes([0.15, 0.04, 0.7, 0.03])
-    progress_slider = Slider(
-        ax=slider_ax,
-        label="Progress (components)",
-        valmin=0,
-        valmax=len(animator.frequencies_to_draw),
-        valinit=0,
-        valstep=1,
-    )
+    def _init_animator(self):
+        self.animator = Animator(
+            image_ax=self.ax[3],
+            layer_ax=self.ax[1],
+            fft_ax=self.ax[2],
+            fft=self.image_fft,
+        )
 
-    def on_progress_change(val):
-        target = int(val)
-        animator.draw_up_to(target)
-        fig.canvas.draw_idle()
+    def _set_titles(self):
+        self.fig.suptitle(
+            f"Autoplay: {self.animator.steps_per_tick} comps/tick • {self.animator.tick_interval_ms}ms",
+            y=0.90,
+        )
 
-    progress_slider.on_changed(on_progress_change)
+    def _schedule_burst(self, total_steps: int):
+        total_steps = max(1, int(total_steps))
+        self._burst_end = min(self._current_step + total_steps, len(self.animator.frequencies_to_draw))
+        if not self._bursting:
+            self._timer = self.fig.canvas.new_timer(interval=max(1, int(self.animator.tick_interval_ms)))
+            self._timer.add_callback(self._tick)
+            self._bursting = True
+            self._timer.start()
 
-    animator.reset_state()
-    plt.show()
+    def _tick(self):
+        remaining = self._burst_end - self._current_step
+        to_do = min(self.animator.steps_per_tick, remaining)
+        for _ in range(to_do):
+            if self._current_step >= self._burst_end:
+                break
+            self.animator.animate(self._current_step)
+            self._current_step += 1
+        self.fig.canvas.draw_idle()
+        if self._current_step >= self._burst_end or self._current_step >= len(self.animator.frequencies_to_draw):
+            if self._timer is not None:
+                self._timer.stop()
+            self._bursting = False
 
-
-def start_with_keys(image_data: np.ndarray, image_fft: np.ndarray, window_title: str = "2D FFT Visualisation"):
-    """Start the UI where click / space / right arrow advance step by step."""
-    fig, ax = plt.subplots(nrows=2, ncols=2)
-
-    ax[0, 0].imshow(image_data, cmap="gray", vmin=0, vmax=255)
-    ax[0, 0].set_title("Original Image")
-
-    animator = Animator(
-        image_ax=ax[1, 0],
-        layer_ax=ax[1, 1],
-        fft_ax=ax[0, 1],
-        fft=image_fft,
-    )
-
-    current_step = 0
-
-    def draw_next_step():
-        nonlocal current_step
-        animator.animate(current_step)
-        current_step += 1
-        plt.draw()
-
-    def on_click(event):
-        if event.button == 1:
-            draw_next_step()
-
-    def on_key(event):
-        if event.key == "right" or event.key == " ":
-            draw_next_step()
-
-    fig.canvas.mpl_connect("button_press_event", on_click)
-    fig.canvas.mpl_connect("key_press_event", on_key)
-
-    fig.suptitle("Click / Space / Right Arrow for next step", y=0.95)
-    # Add spacing between subplots to prevent overlaps
-    plt.subplots_adjust(left=0.08, right=0.98, bottom=0.08, top=0.88, wspace=0.35, hspace=0.40)
-    if hasattr(fig.canvas, "manager") and hasattr(fig.canvas.manager, "set_window_title"):
-        fig.canvas.manager.set_window_title(window_title)
-
-    draw_next_step()
-    plt.show()

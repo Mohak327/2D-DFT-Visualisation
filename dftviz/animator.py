@@ -21,14 +21,32 @@ def compute_2d_complex_sinusoid(size, freq_x, freq_y, coefficient):
 
 
 class Animator:
-    """Handles progressive reconstruction of an image from its 2D FFT components."""
+    """Handles progressive reconstruction of an image from its 2D FFT components.
 
-    def __init__(self, image_ax, layer_ax, fft_ax, fft):
+    UI burst tuning parameters are accepted here so UI helpers don't need to pass
+    them around explicitly.
+    """
+
+    def __init__(
+        self,
+        image_ax,
+        layer_ax,
+        fft_ax,
+        fft,
+        *,
+        steps_per_key: int = 1000,
+        steps_per_tick: int = 10,
+        tick_interval_ms: int = 10,
+    ):
         self.image_ax = image_ax
         self.layer_ax = layer_ax
         self.fft_ax = fft_ax
         self.fft = fft
         self.size = len(fft)
+        # Store UI burst parameters
+        self.steps_per_key = int(steps_per_key)
+        self.steps_per_tick = int(steps_per_tick)
+        self.tick_interval_ms = int(tick_interval_ms)
 
         self.image = np.zeros((self.size, self.size), dtype=float)
         self.image_imshow = image_ax.imshow(self.image, cmap="gray", vmin=0, vmax=255)
